@@ -10,7 +10,8 @@ curl https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/
 ```
 
 ### For Windows:
-```curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/server/install_scripts/install.bat && install.bat
+```bash
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/server/install_scripts/install.bat && install.bat
 ```
 
 Then simply follow the instructions on the screen to complete the setup.
