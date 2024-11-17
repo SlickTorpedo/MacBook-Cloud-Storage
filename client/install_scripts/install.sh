@@ -19,70 +19,61 @@ curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/re
 echo "Checking if Python is installed..."
 if ! command -v python3 &> /dev/null
 then
-    echo "Python is not installed. Please install Python 3 and try again."
+    echo "Python is not installed. Please install Python and try again."
     exit 1
 fi
 
 # Step 3: Install required Python libraries
 echo "Installing Python requirements..."
-pip3 install -r requirements.txt
+pip3 install -r requirements.txt || { echo "Failed to install requirements. Check your Python and pip installation."; exit 1; }
 
 # Step 4: Prompt for configuration
 echo "Configuring client environment variables..."
 read -p "Enter your username: " username
-export C_DOWNLOADER_USERNAME=$username
-echo "export C_DOWNLOADER_USERNAME=$username" >> ~/.bashrc
+export C_DOWNLOADER_USERNAME="$username"
+echo "export C_DOWNLOADER_USERNAME=\"$username\"" >> ~/.bashrc
 
 read -p "Enter your auth token: " token
-export C_DOWNLOADER_AUTH_TOKEN=$token
-echo "export C_DOWNLOADER_AUTH_TOKEN=$token" >> ~/.bashrc
+export C_DOWNLOADER_AUTH_TOKEN="$token"
+echo "export C_DOWNLOADER_AUTH_TOKEN=\"$token\"" >> ~/.bashrc
 
 read -p "Enter the server URL: " server_url
-export C_DOWNLOADER_SERVER_URL=$server_url
-echo "export C_DOWNLOADER_SERVER_URL=$server_url" >> ~/.bashrc
+export C_DOWNLOADER_SERVER_URL="$server_url"
+echo "export C_DOWNLOADER_SERVER_URL=\"$server_url\"" >> ~/.bashrc
 
 # Step 5: Create aliases for upload, download, and shell
 echo "Creating command aliases..."
 
 # Create cupload script
-cat << EOF > cupload
+cat <<EOL > cupload
 #!/bin/bash
-python3 $(pwd)/upload.py "\$@"
-EOF
+python3 "$(pwd)/upload.py" "\$@"
+EOL
 chmod +x cupload
-sudo mv cupload /usr/local/bin/
+mv cupload /usr/local/bin/cupload
 
 # Create cdownload script
-cat << EOF > cdownload
+cat <<EOL > cdownload
 #!/bin/bash
-python3 $(pwd)/download.py "\$@"
-EOF
+python3 "$(pwd)/download.py" "\$@"
+EOL
 chmod +x cdownload
-sudo mv cdownload /usr/local/bin/
+mv cdownload /usr/local/bin/cdownload
 
 # Create cshell script
-cat << EOF > cshell
+cat <<EOL > cshell
 #!/bin/bash
-python3 $(pwd)/manager.py "\$@"
-EOF
+python3 "$(pwd)/manager.py" "\$@"
+EOL
 chmod +x cshell
-sudo mv cshell /usr/local/bin/
+mv cshell /usr/local/bin/cshell
 
-# Step 6: Reload shell configuration
-shell_name=$(basename "$SHELL")
+# Refresh shell environment
+source ~/.bashrc
 
-if [ "$shell_name" = "bash" ]; then
-    echo "Reloading bash configuration..."
-    source ~/.bashrc
-elif [ "$shell_name" = "zsh" ]; then
-    echo "Reloading zsh configuration..."
-    source ~/.zshrc
-else
-    echo "Setup complete! Please restart your terminal or reload your shell configuration to apply changes."
-fi
-
-# Step 7: Final Message
 echo "Setup complete! You can now use the following commands:"
-echo "- 'cupload {filename} {args}' to upload files"
-echo "- 'cdownload {filename} {args}' to download files"
-echo "- 'cshell {args}' to run the manager shell"
+echo " - 'cupload {filename} {args}' to upload files"
+echo " - 'cdownload {filename} {args}' to download files"
+echo " - 'cshell {args}' to run the manager shell"
+
+echo "Restart your terminal for the environment variables to take effect."
