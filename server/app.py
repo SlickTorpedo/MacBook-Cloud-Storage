@@ -188,5 +188,78 @@ def cleanup():
     shutil.rmtree(temp_folder)
     return jsonify({"success": "Temp folder removed"})
 
+@app.route("/download", methods=["POST"])
+def download():
+    userid = request.form["userid"]
+    auth_token = request.form["auth_token"]
+    tempid = request.form["tempid"]
+    filename = request.form["filename"]
+
+    # Check if the user is authenticated
+    if not authorize_user(userid, auth_token):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Check if the file exists
+    file_path = os.path.join(UPLOAD_FOLDER, userid, filename)
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+
+    # Create a temporary folder for the chunks
+    temp_folder = os.path.join(UPLOAD_FOLDER, userid, tempid)
+    if not os.path.exists(temp_folder):
+        os.makedirs(temp_folder)
+
+    # Split the file into chunks
+    chunk_size = 1024 * 1024  # 1 MB
+    chunk_index = 0
+    with open(file_path, "rb") as f:
+        while True:
+            chunk_data = f.read(chunk_size)
+            if not chunk_data:
+                break
+            chunk_filename = os.path.join(temp_folder, f"{filename}.{chunk_index}")
+            with open(chunk_filename, "wb") as chunk_file:
+                chunk_file.write(chunk_data)
+            chunk_index += 1
+
+    # Stream the chunks to the client
+    def generate():
+        for index in range(chunk_index):
+            chunk_filename = os.path.join(temp_folder, f"{filename}.{index}")
+            with open(chunk_filename, "rb") as chunk_file:
+                yield chunk_file.read()
+            os.remove(chunk_filename)  # Remove the chunk after sending
+
+        # Remove the temporary folder
+        os.rmdir(temp_folder)
+
+    return app.response_class(generate(), mimetype="application/octet-stream")
+
+@app.route("/get_hash", methods=["POST"])
+def get_hash():
+    userid = request.form["userid"]
+    auth_token = request.form["auth_token"]
+    filename = request.form["filename"]
+
+    # Check if the user is authenticated
+    if not authorize_user(userid, auth_token):
+        print("Unauthorized")
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Check if the file exists
+    file_path = os.path.join(UPLOAD_FOLDER, userid, filename)
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+    
+
+    # Calculate the hash of the file
+    file_hash_obj = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        data = f.read()
+        file_hash_obj.update(data)
+        file_hash = file_hash_obj.hexdigest()
+
+    return jsonify({"hash": file_hash})
+
 if __name__ == "__main__":
     app.run(port=5000)
