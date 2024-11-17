@@ -224,7 +224,7 @@ if __name__ == "__main__":
     parser.add_argument("--chunk_size", type=int, default=5, help="The size of each chunk in MB.")
     parser.add_argument("--check_hashes", action="store_true", help="Check the hash of the file.")
     parser.add_argument("--check_chunk_hashes", action="store_true", help="Check the hash of each chunk.")
-    parser.add_argument("--rmu", action="store_true", help="Remove the file after upload.")
+    parser.add_argument("--rm", action="store_true", help="Remove the file after upload.")
     parser.add_argument("--retries", type=int, default=3, help="The number of retries for each chunk.")
     parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
 
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     CHUNK_SIZE = args.chunk_size
     CHECK_HASHES = args.check_hashes
     CHECK_CHUNK_HASHES = args.check_chunk_hashes
-    REMOVE_AFTER_UPLOAD = args.rmu
+    REMOVE_AFTER_UPLOAD = args.rm
     RETRIES = args.retries
     DEBUG = args.debug
 
