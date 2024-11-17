@@ -39,8 +39,8 @@ def rename_file(username, auth_token, old_filename, new_filename):
     return response.json()
 
 def run_script(script_name, args):
-    command = [sys.executable, script_name] + args
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    command = [script_name] + args
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
     for line in process.stdout:
         print(line, end='')
     process.stdout.close()
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     while True:
-        command = input(Fore.CYAN + "Enter command (ls, mv filename newfilename, rm filename, up filename, down filename, exit): ").strip()
+        command = input(Fore.WHITE + "Enter command (ls, mv filename newfilename, rm filename, up filename, down filename, exit): ").strip()
         if command == "ls":
             files = list_files(USERNAME, AUTH_TOKEN)
             if "error" in files:
@@ -102,10 +102,10 @@ if __name__ == "__main__":
                 print(Fore.YELLOW + "Invalid command format. Use: rm filename")
         elif command.startswith("up "):
             args = command.split()[1:]
-            run_script("cupload", args)
+            run_script("cupload.bat", args)
         elif command.startswith("down "):
             args = command.split()[1:]
-            run_script("cdownload", args)
+            run_script("cdownload.bat", args)
         elif command == "exit":
             break
         else:
