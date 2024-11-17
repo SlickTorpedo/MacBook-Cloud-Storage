@@ -1,5 +1,4 @@
-# This is the client code that will upload a file to the server.
-
+import argparse
 import requests
 import random
 import string
@@ -11,10 +10,10 @@ import sys
 import threading
 import queue
 from tqdm import tqdm
+from dotenv import load_dotenv
 
-USERNAME = "test"
-AUTH_TOKEN = "test"
-SERVER_URL = "http://localhost:5000"
+load_dotenv()
+
 DEBUG = False
 
 """
@@ -217,23 +216,45 @@ def deconstruct_file(filename, chunk_size, chunk_output, use_hash, use_chunk_has
             print(f"Chunk hashes saved to {filename}.hashes.")
 
 if __name__ == "__main__":
-    filename = "cat.png"
-    chunk_size = 5  # In MB (default)
-    CHECK_HASHES = True
-    CHECK_CHUNK_HASHES = True
-    REMOVE_AFTER_UPLOAD = False
-    RETRIES = 3
+    parser = argparse.ArgumentParser(description="Upload a file to the server.")
+    parser.add_argument("filename", help="The name of the file to upload.")
+    parser.add_argument("--username", help="The username of the user.")
+    parser.add_argument("--auth_token", help="The authentication token of the user.")
+    parser.add_argument("--server_url", help="The server URL.")
+    parser.add_argument("--chunk_size", type=int, default=5, help="The size of each chunk in MB.")
+    parser.add_argument("--check_hashes", action="store_true", help="Check the hash of the file.")
+    parser.add_argument("--check_chunk_hashes", action="store_true", help="Check the hash of each chunk.")
+    parser.add_argument("--rmu", action="store_true", help="Remove the file after upload.")
+    parser.add_argument("--retries", type=int, default=3, help="The number of retries for each chunk.")
+    parser.add_argument("--debug", action="store_true", help="Enable debug mode.")
 
-    # Prepare the file for upload
-    unique_id = prepare_upload(filename)
-    if not unique_id:
-        print(f"Cannot find file {filename}.")
+    args = parser.parse_args()
+
+    USERNAME = args.username or os.getenv('C_DOWNLOADER_USERNAME')
+    AUTH_TOKEN = args.auth_token or os.getenv('C_DOWNLOADER_AUTH_TOKEN')
+    FILENAME = args.filename
+    SERVER_URL = args.server_url or "http://localhost:5000"
+    CHUNK_SIZE = args.chunk_size
+    CHECK_HASHES = args.check_hashes
+    CHECK_CHUNK_HASHES = args.check_chunk_hashes
+    REMOVE_AFTER_UPLOAD = args.rmu
+    RETRIES = args.retries
+    DEBUG = args.debug
+
+    if not USERNAME or not AUTH_TOKEN:
+        print("Username and auth token must be provided either as arguments or environment variables. Please set ENV variables C_DOWNLOADER_USERNAME and C_DOWNLOADER_AUTH_TOKEN.")
         sys.exit(1)
 
-    print(f"Uploading file {filename}.")
+    # Prepare the file for upload
+    unique_id = prepare_upload(FILENAME)
+    if not unique_id:
+        print(f"Cannot find file {FILENAME}.")
+        sys.exit(1)
+
+    print(f"Uploading file {FILENAME}.")
 
     # Deconstruct the file into chunks
-    deconstruct_file(filename, chunk_size, unique_id, CHECK_HASHES, CHECK_CHUNK_HASHES)  # Use hash and chunk hashes
+    deconstruct_file(FILENAME, CHUNK_SIZE, unique_id, CHECK_HASHES, CHECK_CHUNK_HASHES)  # Use hash and chunk hashes
 
     # Get the list of chunks
     chunks = os.listdir(unique_id)
@@ -265,14 +286,14 @@ if __name__ == "__main__":
     # Cleanup the temp folder
     cleanup_upload(unique_id)
 
-    print(f"Saved on the server as {filename}.")
+    print(f"Saved on the server as {FILENAME}.")
 
     if REMOVE_AFTER_UPLOAD:
-        os.remove(filename)
-        print(f"Removed file {filename}.")
+        os.remove(FILENAME)
+        print(f"Removed file {FILENAME}.")
 
     # Process the file on the server side
-    validation = process_file_server_side(USERNAME, AUTH_TOKEN, unique_id, filename)
+    validation = process_file_server_side(USERNAME, AUTH_TOKEN, unique_id, FILENAME)
     if(validation.get("error")):
         print(f"Error validating file: {validation.get('error')}")
     else:
