@@ -29,8 +29,20 @@ This function downloads a file from the server.
 """
 def download_file(username, auth_token, filename, unique_id):
     data = {"userid": username, "auth_token": auth_token, "tempid": unique_id, "filename": filename}
-    response = requests.post("{}/download".format(SERVER_URL), data=data, stream=True)
-    response.raise_for_status()  # Raise an error for bad status codes
+    try:
+        response = requests.post("{}/download".format(SERVER_URL), data=data, stream=True)
+        response.raise_for_status()  # Raise an error for bad status codes
+    except requests.exceptions.HTTPError as http_err:
+        if response.status_code == 404:
+            print("File does not exist.")
+        else:
+            print(f"HTTP error occurred: {http_err}")
+        remove_temp_folder(unique_id)
+        sys.exit(1)
+    except Exception as err:
+        print(f"An error occurred: {err}")
+        remove_temp_folder(unique_id)
+        sys.exit(1)
     return response
 
 """
@@ -80,6 +92,17 @@ def reassemble_file(filename, chunk_folder, use_hash=False, username=None, auth_
         if use_hash and DEBUG:
             print(f"Hash of file: {actual_file_hash}")
 
+"""This function will remove the temp folder in the case of an error.
+@param unique_id: The unique ID of the download.
+"""
+def remove_temp_folder(unique_id):
+    try:
+        shutil.rmtree(unique_id)
+        if DEBUG:
+            print(f"Removed temp folder {unique_id}.")
+    except Exception as e:
+        pass
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Download and reassemble a file from the server.")
     parser.add_argument("filename", help="The name of the file to download.")
@@ -107,7 +130,7 @@ if __name__ == "__main__":
     if not os.path.exists(UNIQUE_ID):
         os.mkdir(UNIQUE_ID)
 
-    print(f"Downloading file {FILENAME}.")
+    print(f"Looking for file {FILENAME}")
 
     response = download_file(USERNAME, AUTH_TOKEN, FILENAME, UNIQUE_ID)
 
