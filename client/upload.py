@@ -30,9 +30,9 @@ This function will check for a unique ID before uploading the file.
 @param unique_id: The unique ID to check.
 @param filename: The name of the file to upload. (This is just to check if the file exists.)
 """
-def check_unique_id(username, auth_token, unique_id, filename):
+def check_unique_id(username, auth_token, unique_id, filename, overwrite):
     #This filename is just to check if the file exists.
-    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id, "filename": filename}
+    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id, "filename": filename, "overwrite": overwrite}
     response = requests.post("{}/id".format(SERVER_URL), data=data)
     return response.json()
 
@@ -107,17 +107,20 @@ def cleanup_failed_upload(unique_id, username, auth_token):
 """This function will check if the file exists,
 and give you a unique ID you can use for the folder chunking.
 @param filename: The name of the file to upload.
+@param overwrite: Whether to overwrite the file if it already exists.
 """
-def prepare_upload(filename):
+def prepare_upload(filename, overwrite=False):
     if not os.path.exists(filename):
         return f"File {filename} does not exist on your system."
     unique_id = generate_random_string(10)
     if DEBUG:
         print("Checking if ID is unique...")
+    if not overwrite:
+        overwrite = "IGNORE"
     while True:
-        response = check_unique_id(USERNAME, AUTH_TOKEN, unique_id, filename)
+        response = check_unique_id(USERNAME, AUTH_TOKEN, unique_id, filename, overwrite)
         if response.get("error") == "File already exists":
-            return f"Error: File {filename} already exists on the server. Remove the file or choose a different name."
+            return f"Error: File {filename} already exists on the server. Remove the file, choose a different name, or use the --overwrite flag."
         elif response.get("error") or os.path.exists(unique_id):
             unique_id = generate_random_string(10)
             if DEBUG:
@@ -227,6 +230,7 @@ def deconstruct_file(filename, chunk_size, chunk_output, use_hash, use_chunk_has
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload a file to the server.")
     parser.add_argument("filename", help="The name of the file to upload.")
+    parser.add_argument("--overwrite", action="store_true", help="Overwrite the file if it already exists.")
     parser.add_argument("--username", help="The username of the user.")
     parser.add_argument("--auth_token", help="The authentication token of the user.")
     parser.add_argument("--server_url", help="The server URL.")
@@ -252,13 +256,14 @@ if __name__ == "__main__":
     REMOVE_AFTER_UPLOAD = args.rm
     RETRIES = args.retries
     DEBUG = args.debug
+    OVERWRITE = args.overwrite
 
     if not USERNAME or not AUTH_TOKEN:
         print("Username and auth token must be provided either as arguments or environment variables. Please set ENV variables C_DOWNLOADER_USERNAME and C_DOWNLOADER_AUTH_TOKEN.")
         sys.exit(1)
 
     # Prepare the file for upload
-    unique_id = prepare_upload(FILENAME)
+    unique_id = prepare_upload(FILENAME, OVERWRITE)
     if not unique_id.startswith("C_"):
         print(unique_id)
         sys.exit(1)
@@ -298,11 +303,11 @@ if __name__ == "__main__":
     # Cleanup the temp folder
     cleanup_upload(unique_id)
 
-    print(f"Saved on the server as {FILENAME}.")
+    print(f"Saved on the server as {FILENAME}")
 
     if REMOVE_AFTER_UPLOAD:
         os.remove(FILENAME)
-        print(f"Removed file {FILENAME}.")
+        print(f"Removed file {FILENAME}")
 
     # Process the file on the server side
     validation = process_file_server_side(USERNAME, AUTH_TOKEN, unique_id, FILENAME)

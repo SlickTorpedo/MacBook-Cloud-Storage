@@ -101,6 +101,9 @@ def check_id():
     auth_token = request.form["auth_token"]
     tempid = request.form["tempid"]
     filename = request.form["filename"]
+    overwrite = request.form["overwrite"]
+    if overwrite == "IGNORE":
+        overwrite = False
     
     # Check if the user is authenticated
     if not authorize_user(userid, auth_token):
@@ -112,7 +115,10 @@ def check_id():
         if not check_file_exists(userid, filename):
             return jsonify({"success": "ID is unique"})
         else:
-            return jsonify({"error": "File already exists"})
+            if overwrite:
+                return jsonify({"success": "File exists, but will be overwritten"})
+            else:
+                return jsonify({"error": "File already exists"})
     else:
         return jsonify({"error": "ID already exists"})
     
