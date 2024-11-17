@@ -1,4 +1,4 @@
-#This is the client code that will upload a file to the server.
+# This is the client code that will upload a file to the server.
 
 import requests
 import random
@@ -9,6 +9,7 @@ import hashlib
 import math
 import sys
 import threading
+import queue
 from tqdm import tqdm
 
 USERNAME = "test"
@@ -40,15 +41,67 @@ This function sends a request to the server to upload a file.
 @param auth_token: The authentication token of the user.
 @param filename: The name of the file to upload.
 @param unique_id: The unique ID to use for the upload.
+@param progress_bar: The progress bar to update.
+@param CHECK_CHUNK_HASHES: Whether to check the hash of each chunk.
+@param retries: The number of retries to attempt.
 """
+class UploadFailedException(Exception):
+    pass
+
 progress_bar_lock = threading.Lock()  # Create a lock for the progress bar
-def upload_file(username, auth_token, filename, unique_id, progress_bar):
-    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id}
+
+def upload_file(username, auth_token, filename, unique_id, progress_bar, CHECK_CHUNK_HASHES, retries, exception_queue):
+    chunk_hash = "IGNORE"
+    if CHECK_CHUNK_HASHES:
+        with open(filename, "rb") as f:
+            chunk_data = f.read()
+        chunk_hash = hashlib.sha256(chunk_data).hexdigest()
+    
+    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id, "chunk_hash": chunk_hash}
     files = {"file": open(filename, "rb")}
-    response = requests.post("{}/upload".format(SERVER_URL), data=data, files=files)
-    with progress_bar_lock:
-        progress_bar.update(1)
-    # return response.json()
+    
+    for attempt in range(retries):
+        try:
+            response = requests.post("{}/upload".format(SERVER_URL), data=data, files=files)
+            response.raise_for_status()  # Raise an error for bad status codes
+            response_data = response.json()
+            if "error" in response_data:
+                if DEBUG:
+                    print(f"Server error: {response_data['error']}")
+                raise requests.RequestException(response_data["error"])
+            with progress_bar_lock:
+                progress_bar.update(1)
+            return response_data
+        except Exception as e:
+            if attempt < retries - 1:
+                if DEBUG:
+                    print(f"Upload failed (attempt {attempt + 1}/{retries}). Retrying... Error: {e}")
+            else:
+                if DEBUG:
+                    print(f"Upload failed after {retries} attempts. Error: {e}")
+                exception_queue.put(UploadFailedException(f"Failed to upload {filename} after {retries} attempts. Pass the --debug flag for more information."))
+                return
+        finally:
+            files["file"].close()
+
+"""
+This function will remove the temp file client and server side in the event of an error.
+@param unique_id: The unique ID to delete.
+@username: The username of the user.
+@auth_token: The authentication token of the user.
+"""
+def cleanup_failed_upload(unique_id, username, auth_token):
+    if os.path.exists(unique_id):
+        shutil.rmtree(unique_id)
+        if DEBUG:
+            print(f"Removed temp folder {unique_id}.")
+    else:
+        if DEBUG:
+            print(f"Temp folder {unique_id} does not exist.")
+    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id}
+    response = requests.post("{}/cleanup".format(SERVER_URL), data=data)
+    if DEBUG:
+        print(response.json())
 
 """This function will check if the file exists,
 and give you a unique ID you can use for the folder chunking.
@@ -163,13 +216,13 @@ def deconstruct_file(filename, chunk_size, chunk_output, use_hash, use_chunk_has
         if DEBUG:
             print(f"Chunk hashes saved to {filename}.hashes.")
 
-
 if __name__ == "__main__":
     filename = "cat.png"
     chunk_size = 5  # In MB (default)
     CHECK_HASHES = True
     CHECK_CHUNK_HASHES = True
     REMOVE_AFTER_UPLOAD = False
+    RETRIES = 3
 
     # Prepare the file for upload
     unique_id = prepare_upload(filename)
@@ -188,18 +241,26 @@ if __name__ == "__main__":
 
     # Track threads in a list
     threads = []
+    exception_queue = queue.Queue()
 
     # Create a progress bar
     with tqdm(total=total_chunks, desc="Uploading chunks", unit="chunks") as progress_bar:
         # Upload the file to the server
         for chunk in chunks:
-            thread = threading.Thread(target=upload_file, args=(USERNAME, AUTH_TOKEN, f"{unique_id}/{chunk}", unique_id, progress_bar))
+            thread = threading.Thread(target=upload_file, args=(USERNAME, AUTH_TOKEN, f"{unique_id}/{chunk}", unique_id, progress_bar, CHECK_CHUNK_HASHES, RETRIES, exception_queue))
             threads.append(thread)
             thread.start()
         
         # Wait for all threads to finish
         for thread in threads:
             thread.join()  # Join only the threads you started, otherwise the program will hang
+
+    # Check for exceptions
+    while not exception_queue.empty():
+        exception = exception_queue.get()
+        print(f"Upload failed: {exception}")
+        cleanup_failed_upload(unique_id, USERNAME, AUTH_TOKEN)
+        sys.exit(1)
 
     # Cleanup the temp folder
     cleanup_upload(unique_id)
@@ -217,4 +278,3 @@ if __name__ == "__main__":
     else:
         if DEBUG:
             print(f"File validated: {validation.get('success')}")
-    

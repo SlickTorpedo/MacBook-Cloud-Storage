@@ -34,6 +34,9 @@ def upload():
     tempid = request.form["tempid"]
     userid = request.form["userid"]
     auth_token = request.form["auth_token"]
+    chunk_hash = request.form["chunk_hash"]
+    if chunk_hash == "IGNORE":
+        chunk_hash = None
     
     # Check if the user is authenticated
     if not authorize_user(userid, auth_token):
@@ -48,14 +51,17 @@ def upload():
     temp_folder = f"{UPLOAD_FOLDER}/{userid}/{tempid}"
     if not os.path.exists(temp_folder):
         os.makedirs(temp_folder)
-    # else:
-    #     # This should not happen, as the tempid should be unique
-    #     # The client will generate a unique ID, and send it to the /id endpoint to check if it is unique.
-    #     return jsonify({"error": "Temp folder already exists"})
-    
-    # Save the file to the temp folder
+
     try:
         file.save(f"{temp_folder}/{file.filename}")
+        if(chunk_hash):
+            file_hash_obj = hashlib.sha256()
+            with open(f"{temp_folder}/{file.filename}", "rb") as f:
+                data = f.read()
+                file_hash_obj.update(data)
+                file_hash = file_hash_obj.hexdigest()
+            if file_hash != chunk_hash:
+                return jsonify({"error": "File hash mismatch!"})
         return jsonify({"success": "File uploaded"})
     except Exception as e:
         return jsonify({"error": "Error saving file: " + str(e)})
@@ -160,6 +166,27 @@ def process_file():
         return jsonify({"success": "Files processed"})
     except Exception as e:
         return jsonify({"error": "Error processing files: " + str(e)})
+    
+
+@app.route("/cleanup", methods=["POST"])
+def cleanup():
+    #In the event of an error client side, the user can request to remove the temp folder.
+    userid = request.form["userid"]
+    auth_token = request.form["auth_token"]
+    tempid = request.form["tempid"]
+
+    # Check if the user is authenticated
+    if not authorize_user(userid, auth_token):
+        return jsonify({"error": "Unauthorized"})
+    
+    # Check if the tempid folder exists
+    temp_folder = f"{UPLOAD_FOLDER}/{userid}/{tempid}"
+    if not os.path.exists(temp_folder):
+        return jsonify({"error": "Temp folder does not exist"})
+    
+    # Remove the temp folder
+    shutil.rmtree(temp_folder)
+    return jsonify({"success": "Temp folder removed"})
 
 if __name__ == "__main__":
     app.run(port=5000)
