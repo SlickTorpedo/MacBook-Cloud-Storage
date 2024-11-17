@@ -2,9 +2,12 @@ import argparse
 import requests
 import os
 import sys
+import subprocess
 from dotenv import load_dotenv
+from colorama import init, Fore, Style
 
 load_dotenv()
+init(autoreset=True)
 
 DEBUG = False
 
@@ -35,6 +38,15 @@ def rename_file(username, auth_token, old_filename, new_filename):
         print(response.json())
     return response.json()
 
+def run_script(script_name, args):
+    command = [sys.executable, script_name] + args
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    for line in process.stdout:
+        print(line, end='')
+    process.stdout.close()
+    process.wait()
+    return process.returncode
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Manage files on the server.")
     parser.add_argument("--username", help="The username of the user.")
@@ -50,42 +62,51 @@ if __name__ == "__main__":
     DEBUG = args.debug
 
     if not USERNAME or not AUTH_TOKEN:
-        print("Username and auth token must be provided either as arguments or environment variables. Please set ENV variables C_DOWNLOADER_USERNAME and C_DOWNLOADER_AUTH_TOKEN.")
+        print(Fore.RED + "Username and auth token must be provided either as arguments or environment variables. Please set ENV variables C_DOWNLOADER_USERNAME and C_DOWNLOADER_AUTH_TOKEN.")
         sys.exit(1)
 
     while True:
-        command = input("Enter command (ls, mv filename newfilename, rm filename, exit): ").strip()
+        command = input(Fore.CYAN + "Enter command (ls, mv filename newfilename, rm filename, up filename, down filename, exit): ").strip()
         if command == "ls":
             files = list_files(USERNAME, AUTH_TOKEN)
             if "error" in files:
-                print(files["error"])
+                print(Fore.RED + files["error"])
             else:
-                print("Files on server:")
-                for file in files:
-                    print(file)
+                files = files["files"]
+                print(Fore.GREEN + "Files on server:")
+                files_on_server = ""
+                for f in files:
+                    files_on_server += f + "   "
+                print(Fore.GREEN + files_on_server)
         elif command.startswith("mv "):
             parts = command.split()
             if len(parts) == 3:
                 old_filename, new_filename = parts[1], parts[2]
                 response = rename_file(USERNAME, AUTH_TOKEN, old_filename, new_filename)
                 if response.get("error"):
-                    print(f"Error renaming file: {response.get('error')}")
+                    print(Fore.RED + f"Error renaming file: {response.get('error')}")
                 else:
-                    print(f"File {old_filename} renamed to {new_filename} successfully.")
+                    print(Fore.GREEN + f"File {old_filename} renamed to {new_filename} successfully.")
             else:
-                print("Invalid command format. Use: mv filename newfilename")
+                print(Fore.YELLOW + "Invalid command format. Use: mv filename newfilename")
         elif command.startswith("rm "):
             parts = command.split()
             if len(parts) == 2:
                 filename = parts[1]
                 response = delete_file(USERNAME, AUTH_TOKEN, filename)
                 if response.get("error"):
-                    print(f"Error deleting file: {response.get('error')}")
+                    print(Fore.RED + f"Error deleting file: {response.get('error')}")
                 else:
-                    print(f"File {filename} deleted successfully.")
+                    print(Fore.GREEN + f"File {filename} deleted successfully.")
             else:
-                print("Invalid command format. Use: rm filename")
+                print(Fore.YELLOW + "Invalid command format. Use: rm filename")
+        elif command.startswith("up "):
+            args = command.split()[1:]
+            run_script("upload.py", args)
+        elif command.startswith("down "):
+            args = command.split()[1:]
+            run_script("download.py", args)
         elif command == "exit":
             break
         else:
-            print("Invalid command. Use: ls, mv filename newfilename, rm filename, exit")
+            print(Fore.YELLOW + "Invalid command. Use: ls, mv filename newfilename, rm filename, up filename, down filename, exit")
