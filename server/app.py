@@ -84,8 +84,6 @@ def process_file():
     auth_token = request.form["auth_token"]
     tempid = request.form["tempid"]
     output_file = request.form["output_file"]
-    check_hash = request.form.get("check_hash", "true").lower() == "true"
-    check_chunk_hashes = request.form.get("check_chunk_hashes", "false").lower() == "true"
     
     # Check if the user is authenticated
     if not authorize_user(userid, auth_token):
@@ -103,6 +101,7 @@ def process_file():
     
     # Read the file-wide hash
     hash_value = None
+    check_hash = os.path.exists(f"{temp_folder}/{output_file}.hash")
     if check_hash:
         hash_file = f"{temp_folder}/{output_file}.hash"
         if os.path.exists(hash_file):
@@ -113,6 +112,7 @@ def process_file():
     
     # Read the chunk hashes
     chunk_hashes = []
+    check_chunk_hashes = os.path.exists(f"{temp_folder}/{output_file}.hashes")
     if check_chunk_hashes:
         hashes_file = f"{temp_folder}/{output_file}.hashes"
         if os.path.exists(hashes_file):

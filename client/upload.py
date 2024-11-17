@@ -211,5 +211,10 @@ if __name__ == "__main__":
         print(f"Removed file {filename}.")
 
     # Process the file on the server side
-    process_file_server_side(USERNAME, AUTH_TOKEN, unique_id, filename, CHECK_HASHES, CHECK_CHUNK_HASHES)
-    #This can be done later, but it's better to do it now to save time.
+    validation = process_file_server_side(USERNAME, AUTH_TOKEN, unique_id, filename)
+    if(validation.get("error")):
+        print(f"Error validating file: {validation.get('error')}")
+    else:
+        if DEBUG:
+            print(f"File validated: {validation.get('success')}")
+    
