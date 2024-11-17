@@ -5,6 +5,27 @@ import os
 import sys
 import hashlib
 import shutil
+import dotenv
+import json
+
+dotenv.load_dotenv()
+
+print("Loading user system...")
+#Look in the ENV for the "USERS" variable, which contains the users and their auth tokens.
+USERS = os.getenv("USERS")
+if not USERS:
+    print("No users found in the ENV. Please create an ENV file and set the USERS variable to a JSON object with the users and their auth tokens.")
+    sys.exit(1)
+
+try:
+    USERS = json.loads(USERS)
+except Exception as e:
+    print("Error parsing users JSON: " + str(e))
+    sys.exit(1)
+
+print("Users loaded.")
+
+
 
 app = Flask(__name__)
 CORS(app)
@@ -14,10 +35,9 @@ CORS(app)
 UPLOAD_FOLDER = "uploads"
 
 def authorize_user(userid, auth_token):
-    if(userid != "test" or auth_token != "test"):
+    if userid not in USERS:
         return False
-    # Check if the user is authorized to upload files.
-    return True
+    return USERS[userid] == auth_token
 
 # When a user uploads a file, it will contain a "tempid" field.
 # This tempid is used as the folder name for the user while the file is being processed.
