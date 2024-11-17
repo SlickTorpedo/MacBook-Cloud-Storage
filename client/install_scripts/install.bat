@@ -67,9 +67,9 @@ echo Adding current directory to PATH...
 setx PATH "%~dp0;%PATH%"
 
 echo Setup complete! You can now use the following commands:
+echo You will need to restart your terminal for the changes to take effect.
 echo - "cupload {filename} {args}" to upload files
 echo - "cdownload {filename} {args}" to download files
 echo - "cshell {args}" to run the manager shell
-echo You will need to restart your terminal for the changes to take effect.
 
 pause
