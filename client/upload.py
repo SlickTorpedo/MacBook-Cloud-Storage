@@ -28,9 +28,11 @@ This function will check for a unique ID before uploading the file.
 @param username: The username of the user.
 @param auth_token: The authentication token of the user.
 @param unique_id: The unique ID to check.
+@param filename: The name of the file to upload. (This is just to check if the file exists.)
 """
-def check_unique_id(username, auth_token, unique_id):
-    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id}
+def check_unique_id(username, auth_token, unique_id, filename):
+    #This filename is just to check if the file exists.
+    data = {"userid": username, "auth_token": auth_token, "tempid": unique_id, "filename": filename}
     response = requests.post("{}/id".format(SERVER_URL), data=data)
     return response.json()
 
@@ -108,16 +110,23 @@ and give you a unique ID you can use for the folder chunking.
 """
 def prepare_upload(filename):
     if not os.path.exists(filename):
-        return False
+        return f"File {filename} does not exist on your system."
     unique_id = generate_random_string(10)
     if DEBUG:
         print("Checking if ID is unique...")
-    while check_unique_id(USERNAME, AUTH_TOKEN, unique_id).get("error") or os.path.exists(unique_id):
-        unique_id = generate_random_string(10)
-        if DEBUG:
-            print("ID is not unique, generating new ID...")
+    while True:
+        response = check_unique_id(USERNAME, AUTH_TOKEN, unique_id, filename)
+        if response.get("error") == "File already exists":
+            return f"Error: File {filename} already exists on the server. Remove the file or choose a different name."
+        elif response.get("error") or os.path.exists(unique_id):
+            unique_id = generate_random_string(10)
+            if DEBUG:
+                print("ID is not unique, generating new ID...")
+        else:
+            break
     if DEBUG:
         print("ID is unique. Using ID:", unique_id)
+    unique_id = "C_" + unique_id
     return unique_id
 
 """This function will remove the temp folder after the file has been uploaded.
@@ -213,7 +222,7 @@ def deconstruct_file(filename, chunk_size, chunk_output, use_hash, use_chunk_has
             print(f"Hash of file: {file_hash}")
     if use_chunk_hashes:
         if DEBUG:
-            print(f"Chunk hashes saved to {filename}.hashes.")
+            print(f"Chunk hashes saved to {filename}.hashes.")\
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Upload a file to the server.")
@@ -233,6 +242,9 @@ if __name__ == "__main__":
     USERNAME = args.username or os.getenv('C_DOWNLOADER_USERNAME')
     AUTH_TOKEN = args.auth_token or os.getenv('C_DOWNLOADER_AUTH_TOKEN')
     FILENAME = args.filename
+
+    FILENAME = os.path.basename(FILENAME)
+
     SERVER_URL = args.server_url or "http://localhost:5000"
     CHUNK_SIZE = args.chunk_size
     CHECK_HASHES = args.check_hashes
@@ -247,11 +259,11 @@ if __name__ == "__main__":
 
     # Prepare the file for upload
     unique_id = prepare_upload(FILENAME)
-    if not unique_id:
-        print(f"Cannot find file {FILENAME}.")
+    if not unique_id.startswith("C_"):
+        print(unique_id)
         sys.exit(1)
 
-    print(f"Uploading file {FILENAME}.")
+    print(f"Uploading file {FILENAME}")
 
     # Deconstruct the file into chunks
     deconstruct_file(FILENAME, CHUNK_SIZE, unique_id, CHECK_HASHES, CHECK_CHUNK_HASHES)  # Use hash and chunk hashes

@@ -39,6 +39,10 @@ def authorize_user(userid, auth_token):
         return False
     return USERS[userid] == auth_token
 
+@app.route("/status", methods=["GET"])
+def status():
+    return jsonify({"status": "OK"})
+
 # When a user uploads a file, it will contain a "tempid" field.
 # This tempid is used as the folder name for the user while the file is being processed.
 # Then, once the file is processed, the file is saved in the users folder with the proper filename, and the tempid folder is deleted.
@@ -85,13 +89,18 @@ def upload():
         return jsonify({"success": "File uploaded"})
     except Exception as e:
         return jsonify({"error": "Error saving file: " + str(e)})
-    
+
+
+def check_file_exists(userid, filename):
+    file_path = os.path.join(UPLOAD_FOLDER, userid, filename)
+    return os.path.exists(file_path)
 
 @app.route("/id", methods=["POST"])
 def check_id():
     userid = request.form["userid"]
     auth_token = request.form["auth_token"]
     tempid = request.form["tempid"]
+    filename = request.form["filename"]
     
     # Check if the user is authenticated
     if not authorize_user(userid, auth_token):
@@ -100,7 +109,10 @@ def check_id():
     # Check if the tempid folder exists
     temp_folder = f"{UPLOAD_FOLDER}/{userid}/{tempid}"
     if not os.path.exists(temp_folder):
-        return jsonify({"success": "ID is unique"})
+        if not check_file_exists(userid, filename):
+            return jsonify({"success": "ID is unique"})
+        else:
+            return jsonify({"error": "File already exists"})
     else:
         return jsonify({"error": "ID already exists"})
     

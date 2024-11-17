@@ -116,6 +116,9 @@ if __name__ == "__main__":
     USERNAME = args.username or os.getenv('C_DOWNLOADER_USERNAME')
     AUTH_TOKEN = args.auth_token or os.getenv('C_DOWNLOADER_AUTH_TOKEN')
     FILENAME = args.filename 
+
+    FILENAME = os.path.basename(FILENAME)
+
     SERVER_URL = args.server_url or "http://localhost:5000"
     DEBUG = args.debug
 
