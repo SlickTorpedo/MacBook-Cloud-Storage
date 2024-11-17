@@ -299,5 +299,63 @@ def get_hash():
 
     return jsonify({"hash": file_hash})
 
+@app.route("/list", methods=["POST"])
+def list_files():
+    userid = request.form["userid"]
+    auth_token = request.form["auth_token"]
+
+    # Check if the user is authenticated
+    if not authorize_user(userid, auth_token):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Check if the user folder exists
+    user_folder = os.path.join(UPLOAD_FOLDER, userid)
+    if not os.path.exists(user_folder):
+        return jsonify({"error": "User folder does not exist"}), 404
+
+    # List the files in the user folder
+    files = os.listdir(user_folder)
+    return jsonify({"files": files})
+
+@app.route("/delete", methods=["POST"])
+def delete_file():
+    userid = request.form["userid"]
+    auth_token = request.form["auth_token"]
+    filename = request.form["filename"]
+
+    # Check if the user is authenticated
+    if not authorize_user(userid, auth_token):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Check if the file exists
+    file_path = os.path.join(UPLOAD_FOLDER, userid, filename)
+    if not os.path.exists(file_path):
+        return jsonify({"error": "File not found"}), 404
+
+    # Delete the file
+    os.remove(file_path)
+    return jsonify({"success": "File deleted"})
+
+@app.route("/rename", methods=["POST"])
+def rename_file():
+    userid = request.form["userid"]
+    auth_token = request.form["auth_token"]
+    old_filename = request.form["old_filename"]
+    new_filename = request.form["new_filename"]
+
+    # Check if the user is authenticated
+    if not authorize_user(userid, auth_token):
+        return jsonify({"error": "Unauthorized"}), 401
+
+    # Check if the file exists
+    old_file_path = os.path.join(UPLOAD_FOLDER, userid, old_filename)
+    if not os.path.exists(old_file_path):
+        return jsonify({"error": "File not found"}), 404
+
+    # Rename the file
+    new_file_path = os.path.join(UPLOAD_FOLDER, userid, new_filename)
+    os.rename(old_file_path, new_file_path)
+    return jsonify({"success": "File renamed"})
+
 if __name__ == "__main__":
     app.run(port=5000)

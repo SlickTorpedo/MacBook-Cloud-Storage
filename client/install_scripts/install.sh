@@ -12,6 +12,9 @@ curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/re
 echo "Downloading requirements.txt..."
 curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/requirements.txt
 
+echo "Downloading manager.py..."
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/manager.py
+
 # Step 2: Check if Python is installed
 echo "Checking if Python is installed..."
 if ! command -v python3 &> /dev/null
@@ -38,7 +41,7 @@ read -p "Enter the server URL: " server_url
 export C_DOWNLOADER_SERVER_URL=$server_url
 echo "export C_DOWNLOADER_SERVER_URL=$server_url" >> ~/.bashrc
 
-# Step 5: Create aliases for upload and download
+# Step 5: Create aliases for upload, download, and shell
 echo "Creating command aliases..."
 
 # Create cupload script
@@ -57,6 +60,14 @@ EOF
 chmod +x cdownload
 sudo mv cdownload /usr/local/bin/
 
+# Create cshell script
+cat << EOF > cshell
+#!/bin/bash
+python3 $(pwd)/manager.py "\$@"
+EOF
+chmod +x cshell
+sudo mv cshell /usr/local/bin/
+
 # Step 6: Reload shell configuration
 shell_name=$(basename "$SHELL")
 
@@ -74,3 +85,4 @@ fi
 echo "Setup complete! You can now use the following commands:"
 echo "- 'cupload {filename} {args}' to upload files"
 echo "- 'cdownload {filename} {args}' to download files"
+echo "- 'cshell {args}' to run the manager shell"
