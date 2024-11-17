@@ -119,7 +119,7 @@ if __name__ == "__main__":
 
     FILENAME = os.path.basename(FILENAME)
 
-    SERVER_URL = args.server_url or "http://localhost:5000"
+    SERVER_URL = args.server_url or os.getenv('C_DOWNLOADER_SERVER_URL') or "http://localhost:5000"
     DEBUG = args.debug
 
     if not USERNAME or not AUTH_TOKEN:

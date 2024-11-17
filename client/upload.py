@@ -249,7 +249,7 @@ if __name__ == "__main__":
 
     FILENAME = os.path.basename(FILENAME)
 
-    SERVER_URL = args.server_url or "http://localhost:5000"
+    SERVER_URL = args.server_url or os.getenv('C_DOWNLOADER_SERVER_URL') or "http://localhost:5000"
     CHUNK_SIZE = args.chunk_size
     CHECK_HASHES = args.check_hashes
     CHECK_CHUNK_HASHES = args.check_chunk_hashes
