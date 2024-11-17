@@ -102,10 +102,10 @@ if __name__ == "__main__":
                 print(Fore.YELLOW + "Invalid command format. Use: rm filename")
         elif command.startswith("up "):
             args = command.split()[1:]
-            run_script("upload.py", args)
+            run_script("cupload", args)
         elif command.startswith("down "):
             args = command.split()[1:]
-            run_script("download.py", args)
+            run_script("cdownload", args)
         elif command == "exit":
             break
         else:
