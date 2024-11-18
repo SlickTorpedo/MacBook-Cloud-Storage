@@ -4,16 +4,16 @@ echo "Setting up MacBook Cloud Storage client..."
 
 # Step 1: Download client scripts
 echo "Downloading upload.py..."
-curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/upload.py
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MacBook-Cloud-Storage/refs/heads/main/client/upload.py
 
 echo "Downloading download.py..."
-curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/download.py
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MacBook-Cloud-Storage/refs/heads/main/client/download.py
 
 echo "Downloading requirements.txt..."
-curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/requirements.txt
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MacBook-Cloud-Storage/refs/heads/main/client/requirements.txt
 
 echo "Downloading manager.py..."
-curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/manager.py
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MacBook-Cloud-Storage/refs/heads/main/client/manager.py
 
 # Step 2: Check if Python is installed
 echo "Checking if Python is installed..."

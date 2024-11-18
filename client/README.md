@@ -6,12 +6,12 @@ To set up the client side of MacBook Cloud Storage, use the following one-liner 
 
 ### For Linux:
 ```bash
-curl https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/install_scripts/install.sh | bash
+curl https://raw.githubusercontent.com/SlickTorpedo/MacBook-Cloud-Storage/refs/heads/main/client/install_scripts/install.sh | bash
 ```
 
 ### For Windows:
 ```bash
-curl -O https://raw.githubusercontent.com/SlickTorpedo/MackBook-Cloud-Storage/refs/heads/main/client/install_scripts/install.bat && install.bat
+curl -O https://raw.githubusercontent.com/SlickTorpedo/MacBook-Cloud-Storage/refs/heads/main/client/install_scripts/install.bat && install.bat
 ```
 
 Then simply follow the instructions on the screen to complete the setup.
