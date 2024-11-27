@@ -168,7 +168,7 @@ def process_file():
     # Process the files (reconstruct the file)
     try:
         chunks = [chunk for chunk in files if not chunk.endswith(".hash") and not chunk.endswith(".hashes")]
-        chunks.sort()
+        chunks.sort(key=lambda x: int(x.split(".")[-1]))
 
         with open(f"{UPLOAD_FOLDER}/{userid}/{output_file}", "wb") as f:
             for i, chunk in enumerate(chunks):
