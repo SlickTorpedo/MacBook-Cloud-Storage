@@ -25,11 +25,25 @@ pip3 install -r requirements.txt
 # Step 5: Prompt for user credentials
 echo "Please create a new user for the server."
 read -p "Enter a username: " username
-read -p "Enter an auth token: " token
+
+# Prompt for token with silent input
+while true; do
+    read -s -p "Enter an auth token: " token
+    echo
+    read -s -p "Confirm auth token: " confirm_token
+    echo
+    if [ "$token" = "$confirm_token" ]; then
+        break
+    else
+        echo "Tokens do not match. Please try again."
+    fi
+done
 
 # Step 6: Create the .env file
 echo "Creating .env file..."
-echo "USERS={\"$username\":\"$token\"}" > .env
+cat <<EOF > .env
+USERS={"$username":"$token"}
+EOF
 
 # Step 7: Run the application
 echo "Setup complete. Starting the server..."
