@@ -3,3 +3,4 @@ Flask-Cors==3.0.10
 python-dotenv==0.19.2
 requests==2.26.0
 tqdm==4.62.3
+Werkzeug==2.2.2
