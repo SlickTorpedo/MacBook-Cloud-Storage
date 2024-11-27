@@ -248,7 +248,7 @@ def download():
         os.makedirs(temp_folder)
 
     # Split the file into chunks
-    chunk_size = 1024 * 1024  # 1 MB
+    chunk_size = (1024 * 1024) * 100  # 100 MB
     chunk_index = 0
     with open(file_path, "rb") as f:
         while True:
