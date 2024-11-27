@@ -168,7 +168,7 @@ def process_file():
     # Process the files (reconstruct the file)
     try:
         chunks = [chunk for chunk in files if not chunk.endswith(".hash") and not chunk.endswith(".hashes")]
-        chunks.sort()
+        chunks.sort(key=lambda x: int(x.split(".")[-1]))
 
         with open(f"{UPLOAD_FOLDER}/{userid}/{output_file}", "wb") as f:
             for i, chunk in enumerate(chunks):
@@ -248,7 +248,7 @@ def download():
         os.makedirs(temp_folder)
 
     # Split the file into chunks
-    chunk_size = 1024 * 1024  # 1 MB
+    chunk_size = (1024 * 1024) * 100  # 100 MB
     chunk_index = 0
     with open(file_path, "rb") as f:
         while True:
@@ -358,4 +358,4 @@ def rename_file():
     return jsonify({"success": "File renamed"})
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    app.run(port=5000,host="0.0.0.0")
